@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone 15 Pro Max 交互框架</title>
+    <style>
+        /* --- Global Styles & Fonts --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&display=swap');
+        
+        /* --- Responsiveness Core --- */
+        html {
+            font-size: calc(100vw / 39);
+        }
+        @media (min-width: 390px) {
+            html {
+                font-size: 10px;
+            }
+        }
+        /* --- Responsiveness Core End --- */
+
+        :root {
+            --iphone-radius: 5.4rem;
+            --screen-radius: 5.2rem;
+            --ios-blue: #007aff; 
+            --ios-light-gray: #f2f2f7;
+            --ios-dark-gray: #e5e5ea; 
+            --ios-text-primary: #000; 
+            --ios-text-secondary: #8e8e93;
+            --wechat-green: #07c160;
+            --ios-low-battery-red: #ff453a;
+            --ios-charging-green: #30d158;
+            --ios-action-gray: #c8c7cc;
+            --ios-action-red: #ff3b30;
+        }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #e9e9e9; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 2rem; box-sizing: border-box; }
+
+        .iphone-mockup { position: relative; width: 100%; max-width: 41.8rem; }
+        .side-buttons-left { position: absolute; top: 0; left: -0.5rem; z-index: 1; display: flex; flex-direction: column; padding-top: 15rem; }
+        .side-buttons-right { position: absolute; top: 0; right: -0.5rem; z-index: 1; display: flex; flex-direction: column; padding-top: 25rem; }
+        .mute-switch { width: 0.5rem; height: 2.8rem; background: linear-gradient(90deg, #7a7a7a, #b0b0b2, #7a7a7a); border: 0.05rem solid #666; border-right: none; border-radius: 0.4rem 0 0 0.4rem; margin-bottom: 2.4rem; cursor: pointer; box-shadow: inset 0.1rem 0 0.1rem rgba(255,255,255,0.3); transition: all 0.1s ease-in-out; }
+        .volume-button { width: 0.5rem; height: 6.5rem; background: linear-gradient(90deg, #7a7a7a, #b0b0b2, #7a7a7a); border: 0.05rem solid #666; border-right: none; border-radius: 0.4rem 0 0 0.4rem; cursor: pointer; box-shadow: inset 0.1rem 0 0.1rem rgba(255,255,255,0.3); transition: all 0.1s ease-in-out; }
+        .power-button { width: 0.5rem; height: 9.5rem; background: linear-gradient(270deg, #6c6c6e, #a0a0a2, #6c6c6e); border: 0.05rem solid #555; border-left: none; border-radius: 0 0.4rem 0.4rem 0; cursor: pointer; box-shadow: inset -0.1rem 0 0.1rem rgba(255,255,255,0.3); transition: all 0.1s ease-in-out; }
+        #volume-up { margin-bottom: 1.8rem; }
+        .mute-switch:active, .volume-button:active { transform: translateX(-0.2rem); background: linear-gradient(90deg, #68686a, #868688); box-shadow: inset -0.1rem 0 0.1rem rgba(0,0,0,0.2); }
+        .power-button:active { transform: translateX(0.2rem); background: linear-gradient(270deg, #5a5a5c, #78787a); box-shadow: inset 0.1rem 0 0.1rem rgba(0,0,0,0.2); }
+        .iphone-body { padding: 1.4rem; border-radius: calc(var(--iphone-radius) + 1.4rem); background: linear-gradient(145deg, #b8b8b8, #8c8c8c, #a0a0a0, #7e7e7e); position: relative; overflow: hidden; z-index: 2; box-shadow: inset 0 0.1rem 0.2rem rgba(255, 255, 255, 0.6), inset 0 -0.1rem 0.2rem rgba(0, 0, 0, 0.4), inset 0 0 1.8rem rgba(0, 0, 0, 0.5), 0 1rem 2rem rgba(0,0,0,0.1), 0 0.2rem 0.6rem rgba(0,0,0,0.1); }
+        .iphone-body::after { content: ""; position: absolute; top: 0.1rem; left: 0; right: 0; height: 0.2rem; background: linear-gradient(to right, transparent, rgba(255,255,255,0.7), transparent); border-radius: inherit; }
+        .iphone-frame { width: 100%; aspect-ratio: 390 / 844; background-color: #1c1c1e; border-radius: var(--iphone-radius); padding: 0.1rem; box-shadow: 0 0 0 0.1rem #888, 0 0 0 1.1rem #111; position: relative; }
+        .iphone-screen { width: 100%; height: 100%; background-image: url('https://s21.ax1x.com/2025/08/18/pVBmass.jpg'); background-size: cover; background-position: center; border-radius: var(--screen-radius); position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        #global-status-bar { position: absolute; top: 0; left: 0; right: 0; height: 6rem; padding: 1.8rem 2.6rem 0; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 101; pointer-events: none; font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+        #status-bar-time { font-size: 1.7rem; font-weight: 600; width: 5.4rem; text-align: center; }
+        .status-icons { display: flex; align-items: center; gap: 0.8rem; }
+        .status-icons svg { width: auto; height: 1.7rem; transition: all 0.3s ease; }
+        #battery-icon { width: 4rem; height: 1.8rem; }
+        #battery-fill { fill: currentColor; transition: width 0.5s ease-in-out, fill 0.3s ease; }
+        #battery-percentage-text { font-family: 'Nunito', 'Inter', sans-serif; font-size: 1.4rem; font-weight: 900; letter-spacing: 0.05rem; text-anchor: middle; dominant-baseline: central; }
+        #global-status-bar.light-content #battery-percentage-text { fill: #333333; }
+        #global-status-bar.dark-content #battery-percentage-text { fill: #fff; }
+        #global-status-bar.light-content { color: white; text-shadow: 0 0.1rem 0.2rem rgba(0,0,0,0.5); background-color: transparent; }
+        #global-status-bar.dark-content { color: var(--ios-text-primary); background-color: #f7f7f7; }
+        .dynamic-island { position: absolute; top: 1.6rem; left: 50%; transform: translateX(-50%); width: 11.1rem; height: 3.6rem; background-color: #000000; border-radius: 1.8rem; z-index: 102; display: flex; align-items: center; justify-content: flex-end; padding-right: 0.6rem; box-sizing: border-box; }
+        .camera-glass { position: relative; width: 1rem; height: 1rem; background: rgba(18, 18, 18, 0.7); border-radius: 50%; box-shadow: 0 0.1rem 0.4rem rgba(0,0,0,0.25), inset 0 0.2rem 0.6rem rgba(255,255,255,0.2); overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        .camera-glass::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(120deg, rgba(255,255,255,0.18) 30%, rgba(255,255,255,0) 80%); border-radius: 50%; pointer-events: none; }
+        .camera-glass::after { content: ""; position: absolute; top: 0.1rem; left: 0.1rem; width: 50%; height: 30%; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 80%); border-radius: 50%; pointer-events: none; }
+        .camera-lens { width: 0.4rem; height: 0.4rem; background-color: #003460; border-radius: 50%; box-shadow: inset 0 0.2rem 0.4rem rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; }
+        .camera-hole { width: 0.2rem; height: 0.2rem; border-radius: 50%; background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 50%), #000000; }
+        .view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--ios-light-gray); opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; display: flex; flex-direction: column; padding-top: 6rem; box-sizing: border-box; }
+        .view.active { opacity: 1; visibility: visible; z-index: 50; }
+        #home-screen { background: transparent; padding-top: 0; }
+        .time-widget { color: white; text-align: center; margin: 8rem 0 6rem 0; text-shadow: 0 0.2rem 0.4rem rgba(0,0,0,0.3); }
+        .time-widget .date { font-size: 2rem; font-weight: 800; opacity: 0.9; font-family: 'Nunito', sans-serif; }
+        .time-widget .time { font-family: 'Nunito', sans-serif; font-size: 8.8rem; font-weight: 900; letter-spacing: 0.2rem; line-height: 1; }
+        .dock { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); width: calc(100% - 3rem); height: 8.8rem; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(1.8rem); -webkit-backdrop-filter: blur(1.8rem); border-radius: 2.8rem; z-index: 90; display: flex; justify-content: space-around; align-items: center; padding: 0 1.5rem; box-sizing: border-box; }
+        .app-icon { display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; }
+        .app-icon img { width: 6rem; height: 6rem; border-radius: 1.5rem; box-shadow: 0 0.2rem 0.5rem rgba(0,0,0,0.1); }
+        .app-header { display: flex; align-items: center; justify-content: space-between; height: 4.4rem; padding: 0 1rem; background-color: #f7f7f7; border-bottom: 0.1rem solid #dcdcdc; flex-shrink: 0; }
+        .app-header-left, .app-header-right { display: flex; align-items: center; gap: 0.5rem; min-width: 8rem; }
+        .app-header-right { justify-content: flex-end; }
+        .app-header-center { flex-grow: 1; text-align: center; font-weight: 600; font-size: 1.7rem; }
+        .app-back-button, .app-action-button { color: var(--ios-blue); font-size: 1.6rem; cursor: pointer; text-decoration: none; background: none; border: none; padding: 0.5rem; display: flex; align-items: center; }
+        .app-action-button:disabled { color: var(--ios-text-secondary); cursor: not-allowed; }
+        .app-back-button svg { width: 2.4rem; height: 2.4rem; }
+        #wechat-app .app-header { border-bottom: none; }
+        .wechat-page-header { flex-shrink: 0; position: relative; height: 0.2rem; background-color: #dcdcdc; border-bottom: none; }
+        .wechat-page-header h1 { position: absolute; left: 50%; top: -2.8rem; transform: translateX(-50%); margin: 0; font-size: 1.7rem; font-weight: 600; pointer-events: none; }
+        .add-button { cursor: pointer; position: absolute; right: 1.6rem; top: -3.4rem; }
+        .add-button svg { width: 2.4rem; height: 2.4rem; }
+        .dropdown-menu { display: none; position: absolute; top: 3rem; right: 0; background-color: #4c4c4c; border-radius: 0.8rem; box-shadow: 0 0.4rem 1.2rem rgba(0,0,0,0.2); z-index: 110; width: 15rem; overflow: hidden; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item { padding: 1.2rem 1.6rem; color: white; font-size: 1.4rem; cursor: pointer; }
+        .dropdown-item:hover { background-color: #636366; }
+        .wechat-content { flex-grow: 1; position: relative; background-color: white; }
+        .wechat-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; }
+        .wechat-page.active { display: flex; }
+        .wechat-page-body { flex-grow: 1; overflow-y: auto; padding: 0 1.6rem 0; box-sizing: border-box; }
+        
+        .chat-item { position: relative; overflow: hidden; border-bottom: 0.1rem solid var(--ios-light-gray); }
+        .chat-item-content { display: flex; align-items: center; padding: 1.2rem 0; cursor: pointer; position: relative; z-index: 2; background-color: #fff; transition: transform 0.3s ease; }
+        .chat-item.pinned .chat-item-content { background-color: #f7f7f7; }
+        .chat-item.swiped .chat-item-content { transform: translateX(-14rem); }
+        .chat-item-actions { position: absolute; top: 0; right: 0; height: 100%; display: flex; z-index: 1; }
+        .chat-action-button { border: none; color: white; font-size: 1.6rem; font-weight: 500; width: 7rem; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .action-pin { background-color: var(--ios-action-gray); }
+        .action-delete { background-color: var(--ios-action-red); }
+
+        .contact-item { display: flex; align-items: center; padding: 1.2rem 0; border-bottom: 0.1rem solid var(--ios-light-gray); cursor: pointer; }
+        .group-select-item { display: flex; align-items: center; padding: 1.2rem 0; border-bottom: 0.1rem solid var(--ios-light-gray); cursor: pointer; }
+        .chat-item-content:hover, .contact-item:hover, .group-select-item:hover { background-color: var(--ios-light-gray); }
+        .chat-avatar, .contact-avatar { width: 5rem; height: 5rem; border-radius: 0.8rem; margin-right: 1.2rem; background-color: var(--ios-dark-gray); object-fit: cover; flex-shrink: 0; }
+        .chat-details { flex-grow: 1; overflow: hidden; }
+        .chat-name, .contact-name { font-weight: 600; font-size: 1.6rem; white-space: nowrap; }
+        .chat-preview { font-size: 1.4rem; color: var(--ios-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-time { font-size: 1.2rem; color: var(--ios-text-secondary); margin-left: 0.8rem; }
+        .contact-group-header { padding: 0.4rem 0; font-size: 1.4rem; font-weight: 600; color: var(--ios-text-secondary); background-color: var(--ios-light-gray); }
+        .group-select-item input[type="checkbox"] { width: 2rem; height: 2rem; margin-right: 1.5rem; }
+        .wechat-tabs { display: flex; justify-content: space-around; background-color: #f7f7f7; border-top: 0.1rem solid #e0e0e0; padding: 0.5rem 0 2.5rem 0; flex-shrink: 0; }
+        .wechat-tab { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; font-size: 1rem; color: var(--ios-text-secondary); cursor: pointer; }
+        .wechat-tab.active { color: var(--wechat-green); }
+        .wechat-tab svg { width: 2.8rem; height: 2.8rem; }
+        .form-container { padding-top: 1.6rem; display: flex; flex-direction: column; gap: 2rem; }
+        .form-section { background-color: white; border-radius: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; padding: 1.2rem 1.6rem; border-bottom: 0.1rem solid var(--ios-light-gray); }
+        .form-section .form-group:last-child { border-bottom: none; }
+        .form-group label { font-weight: 500; font-size: 1.6rem; }
+        .form-group input[type="text"], .form-group input[type="password"], .form-group textarea, .form-group select { width: 100%; padding: 0.8rem 0; border: none; background: transparent; font-size: 1.5rem; box-sizing: border-box; resize: vertical; }
+        .form-group input:focus, .form-group textarea:focus { outline: none; }
+        .form-group textarea { min-height: 8rem; }
+        .avatar-group { display: flex; align-items: center; gap: 1.5rem; }
+        .avatar-preview { width: 6rem; height: 6rem; border-radius: 0.8rem; background-color: var(--ios-dark-gray); object-fit: cover; cursor: pointer; }
+        .avatar-inputs { display: flex; flex-direction: column; gap: 0.8rem; flex-grow: 1; }
+        #chat-view { background-color: var(--ios-dark-gray); }
+        #chat-view-header-center { display: flex; flex-direction: column; line-height: 1.2; }
+        #chat-view-title { font-weight: 600; font-size: 1.7rem; }
+        #chat-view-status { font-size: 1.2rem; color: var(--ios-text-secondary); }
+        .chat-message-container { flex-grow: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+        .chat-message { display: flex; align-items: flex-start; gap: 1rem; max-width: 80%; }
+        .chat-message-avatar { width: 4rem; height: 4rem; border-radius: 0.6rem; flex-shrink: 0; }
+        .chat-message-bubble { padding: 1rem 1.2rem; border-radius: 1.8rem; font-size: 1.6rem; line-height: 1.4; word-wrap: break-word; }
+        .chat-message.ai { align-self: flex-start; }
+        .chat-message.ai .chat-message-bubble { background-color: #fff; color: #000; }
+        .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
+        .chat-message.user .chat-message-bubble { background-color: var(--wechat-green); color: #fff; }
+        .chat-message.system { align-self: center; color: var(--ios-text-secondary); font-size: 1.2rem; background-color: #e0e0e0; padding: 0.4rem 1rem; border-radius: 0.4rem; }
+        .chat-input-bar { flex-shrink: 0; display: flex; align-items: center; padding: 0.8rem 1rem 3rem; background-color: #f7f7f7; border-top: 0.1rem solid #ddd; gap: 1rem; }
+        .chat-input-bar input { flex-grow: 1; height: 3.6rem; padding: 0 1.2rem; border: none; border-radius: 0.4rem; background-color: #fff; }
+        .chat-input-bar button { background: none; border: none; padding: 0.5rem; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .chat-input-bar button svg { width: 2.8rem; height: 2.8rem; }
+        #ai-reply-btn img { width: 2.8rem; height: 2.8rem; }
+        #send-message-btn { 
+            color: var(--ios-text-primary); 
+            font-weight: 600; 
+            font-size: 1.6rem; 
+            min-width: 3.8rem;
+            height: 3.8rem;
+            text-align: center; 
+            transition: all 0.2s ease-in-out;
+        }
+        #send-message-btn.send-active {
+            background-color: var(--wechat-green);
+            color: white;
+            border-radius: 0.6rem;
+            padding: 0 1.5rem;
+            min-width: 4.8rem;
+        }
+        .typing-indicator { text-align: center; color: var(--ios-text-secondary); font-size: 1.4rem; padding: 0.5rem 0; }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-wrapper input { flex-grow: 1; }
+        .password-toggle { position: absolute; right: -1.6rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--ios-text-secondary); padding: 0.8rem 1.6rem; }
+        .fetch-button { width: 100%; padding: 1.4rem; background-color: var(--ios-blue); color: white; border: none; border-radius: 0.8rem; font-size: 1.6rem; font-weight: 600; cursor: pointer; margin-top: 1rem; }
+        .api-status { margin-top: 1.5rem; font-size: 1.4rem; text-align: center; height: 2rem; transition: color 0.3s; }
+        .api-status.success { color: var(--wechat-green); }
+        .api-status.error { color: #ff3b30; }
+        .form-group-header { padding: 1.2rem 1.6rem; font-size: 1.4rem; font-weight: 600; color: var(--ios-text-secondary); background-color: var(--ios-light-gray); margin: 0 -1.6rem; border-bottom: 0.1rem solid var(--ios-light-gray); }
+        .form-section .form-group:first-of-type { padding-top: 2rem; }
+        .api-warehouse-container { margin-top: 2rem; }
+        .api-slot { padding: 1.2rem 1.6rem; border-bottom: 0.1rem solid var(--ios-light-gray); }
+        .api-slot:last-child { border-bottom: none; }
+        .api-slot .form-group { padding: 0.8rem 0; border: none; }
+        .secondary-button { width: 100%; padding: 0.8rem; background-color: var(--ios-dark-gray); color: var(--ios-text-primary); border: none; border-radius: 0.6rem; font-size: 1.4rem; font-weight: 500; cursor: pointer; margin-top: 1rem; }
+        
+        /* --- Theme App Styles --- */
+        #theme-app-body { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 2rem; gap: 2rem; height: 100%; box-sizing: border-box; }
+        .wallpaper-preview-container { width: 80%; aspect-ratio: 9 / 19.5; border-radius: 2.8rem; overflow: hidden; box-shadow: 0 0.4rem 1.2rem rgba(0,0,0,0.15); border: 0.3rem solid rgba(255,255,255,0.7); cursor: pointer; background-color: var(--ios-dark-gray); position: relative; flex-shrink: 0; }
+        #wallpaper-preview { width: 100%; height: 100%; background-size: cover; background-position: center; background-repeat: no-repeat; transition: transform 0.2s ease-in-out; }
+        .wallpaper-preview-container:hover #wallpaper-preview { transform: scale(1.05); }
+        .wallpaper-preview-overlay { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem 1.2rem; background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(0.5rem); -webkit-backdrop-filter: blur(0.5rem); color: white; font-size: 1.4rem; font-weight: 500; border-radius: 1.2rem; pointer-events: none; white-space: nowrap; text-shadow: 0 0.1rem 0.2rem rgba(0,0,0,0.3); }
+        .wallpaper-preview-overlay svg { width: 1.8rem; height: 1.8rem; }
+        .theme-dock-preview-container { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
+        .theme-dock-preview-container label { font-size: 1.4rem; font-weight: 500; color: var(--ios-text-secondary); }
+        .theme-dock-preview { width: 90%; height: 7rem; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(1.5rem); -webkit-backdrop-filter: blur(1.5rem); border-radius: 2.2rem; display: flex; justify-content: space-around; align-items: center; padding: 0 1rem; box-sizing: border-box; border: 0.1rem solid rgba(255,255,255,0.2); }
+        /* MODIFIED: Make preview icons clickable */
+        .theme-dock-preview .app-icon { cursor: pointer; }
+        .theme-dock-preview .app-icon img { width: 4.8rem; height: 4.8rem; border-radius: 1.2rem; }
+        #save-theme-btn { width: 80%; margin-top: auto; margin-bottom: 2rem; }
+
+        .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .popup-overlay.show { display: flex; opacity: 1; }
+        .popup-content { background-color: white; padding: 2rem 2.5rem; border-radius: 1.4rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transform: scale(0.9); transition: transform 0.2s ease-in-out; }
+        .popup-overlay.show .popup-content { transform: scale(1); }
+        .popup-content p { margin: 0 0 1.5rem 0; font-size: 1.7rem; color: var(--ios-text-primary); }
+        .popup-content button { width: 100%; padding: 1rem; border: none; background-color: var(--ios-blue); color: white; font-size: 1.6rem; font-weight: 600; border-radius: 0.8rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="iphone-mockup">
+        <!-- ... (rest of the unchanged mockup HTML remains the same) ... -->
+        <div class="side-buttons-left">
+            <div class="mute-switch" title="静音拨片"></div>
+            <div class="volume-button" id="volume-up" title="音量+"></div>
+            <div class="volume-button" id="volume-down" title="音量-"></div>
+        </div>
+
+        <div class="iphone-body">
+            <div class="iphone-frame">
+                <div class="iphone-screen">
+                    <!-- ... (status bar, dynamic island, etc. remain the same) ... -->
+                    <div id="global-status-bar">
+                        <span id="status-bar-time"></span>
+                        <div class="status-icons">
+                            <svg id="wifi-icon" viewBox="0 0 26 26" fill="currentColor"><path d=" M13,23 L10,20 A4,4 0 0 1 16,20 Z M6,14 A9,9 0 0 1 20,14 L17.5,16.5 A6,6 0 0 0 8.5,16.5 Z M1,8 A15,15 0 0 1 25,8 L22,11 A11,11 0 0 0 4,11 Z "/></svg>
+                            <svg id="battery-icon" viewBox="0 0 40 18" width="40" height="18">
+                                <rect x="1" y="1" width="32" height="16" rx="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                <rect x="35" y="6" width="4" height="6" rx="2" fill="currentColor"/>
+                                <rect id="battery-fill" x="3" y="3" width="28" height="12" rx="5"/>
+                                <text id="battery-percentage-text" x="17" y="9.5" text-anchor="middle" dominant-baseline="central">100</text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="dynamic-island">
+                        <div class="camera-glass"><div class="camera-lens"><div class="camera-hole"></div></div></div>
+                    </div>
+                    
+                    <div id="home-screen" class="view active">
+                        <div class="time-widget">
+                            <div class="date" id="date-display"></div>
+                            <div class="time" id="time-display">10:00</div>
+                        </div>
+                        <div class="dock">
+                            <a href="#" class="app-icon" data-target="wechat-app"><img src="https://s21.ax1x.com/2025/08/19/pVB36KO.jpg" alt="WeChat"></a>
+                            <a href="#" class="app-icon" data-target="world-book-app"><img src="https://s21.ax1x.com/2025/08/19/pVB2pNR.jpg" alt="World Book"></a>
+                            <a href="#" class="app-icon" data-target="theme-app"><img src="https://s21.ax1x.com/2025/08/20/pVBXrff.jpg" alt="Theme"></a>
+                            <a href="#" class="app-icon" data-target="settings-app"><img src="https://s21.ax1x.com/2025/08/19/pVB3vin.jpg" alt="Settings"></a>
+                        </div>
+                    </div>
+
+                    <!-- ... (WeChat, Settings, etc. views remain the same) ... -->
+                    <div id="wechat-app" class="view">
+                        <div class="app-header">
+                            <div class="app-header-left"><button class="app-back-button" data-target="home-screen"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
+                            <div class="app-header-center"></div>
+                            <div class="app-header-right"></div>
+                        </div>
+                        <div class="wechat-content">
+                            <div id="wechat-page-1" class="wechat-page active">
+                                <div class="wechat-page-header">
+                                    <h1>聊天</h1>
+                                    <div class="add-button" id="chat-add-button">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                                        <div class="dropdown-menu" id="chat-dropdown">
+                                            <div class="dropdown-item" id="add-single-chat">新增聊天</div>
+                                            <div class="dropdown-item" id="add-group-chat">发起群聊</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="wechat-page-body" id="chat-list-container"></div>
+                            </div>
+                            <div id="wechat-page-2" class="wechat-page">
+                                <div class="wechat-page-header">
+                                    <h1>通讯录</h1>
+                                    <div class="add-button" id="contact-add-button">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="17" y1="11" x2="23" y2="11"></line></svg>
+                                    </div>
+                                </div>
+                                <div class="wechat-page-body" id="contact-list-container"></div>
+                            </div>
+                            <div id="wechat-page-3" class="wechat-page" style="justify-content: center; align-items: center; font-size: 2.4rem; color: var(--ios-text-secondary);">朋友圈</div>
+                            <div id="wechat-page-4" class="wechat-page" style="justify-content: center; align-items: center; font-size: 2.4rem; color: var(--ios-text-secondary);">我</div>
+                        </div>
+                        <div class="wechat-tabs">
+                            <div class="wechat-tab active" data-page="1"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 18.3V5.7a.7.7 0 0 1 .7-.7h13.6a.7.7 0 0 1 .7.7v9.4a.7.7 0 0 1-.7.7H7.7L4.5 18.3zM6.5 12h11m-11-4h11"></path></svg><span>聊天</span></div>
+                            <div class="wechat-tab" data-page="2"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg><span>通讯录</span></div>
+                            <div class="wechat-tab" data-page="3"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8s-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path></svg><span>朋友圈</span></div>
+                            <div class="wechat-tab" data-page="4"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3s-3-1.34-3-3s1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22c.03-1.99 4-3.08 6-3.08s5.97 1.09 6 3.08c-1.29 1.94-3.5 3.22-6 3.22z"></path></svg><span>我</span></div>
+                        </div>
+                    </div>
+                    <div id="character-creation-view" class="view">
+                        <div class="app-header">
+                            <div class="app-header-left"><button class="app-back-button" id="cancel-character-creation">取消</button></div>
+                            <div class="app-header-center" id="character-form-title">创建角色</div>
+                            <div class="app-header-right"><button class="app-action-button" id="save-character-button">完成</button></div>
+                        </div>
+                        <div class="wechat-page-body">
+                            <form id="character-form" class="form-container">
+                                <div class="form-section">
+                                    <div class="form-group avatar-group">
+                                        <img src="https://s21.ax1x.com/2025/08/19/pVBNbLV.jpg" alt="avatar" class="avatar-preview" id="role-avatar-preview">
+                                        <div class="avatar-inputs">
+                                            <input type="text" id="role-name" placeholder="角色名字 (必填)" required>
+                                            <input type="file" id="role-avatar-file" accept="image/*" style="display: none;">
+                                        </div>
+                                    </div>
+                                    <div class="form-group"><textarea id="role-persona" placeholder="角色人设"></textarea></div>
+                                </div>
+                                <div class="form-section">
+                                     <div class="form-group avatar-group">
+                                        <img src="https://s21.ax1x.com/2025/08/19/pVBNbLV.jpg" alt="avatar" class="avatar-preview" id="user-avatar-preview">
+                                        <div class="avatar-inputs">
+                                            <input type="text" id="user-name" placeholder="你的名字">
+                                            <input type="file" id="user-avatar-file" accept="image/*" style="display: none;">
+                                        </div>
+                                    </div>
+                                    <div class="form-group"><textarea id="user-persona" placeholder="你的人设"></textarea></div>
+                                </div>
+                                <div class="form-section">
+                                    <div class="form-group"><label for="long-term-memory">长期记忆</label><textarea id="long-term-memory" placeholder="输入需要角色长期记住的信息..."></textarea></div>
+                                </div>
+                                <div class="form-section">
+                                    <div class="form-group"><label for="bubble-css">气泡美化 (CSS)</label><textarea id="bubble-css" placeholder=".my-bubble { background: linear-gradient(to right, #ff9a9e, #fecfef); }"></textarea></div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div id="single-chat-creation-view" class="view">
+                        <div class="app-header">
+                            <div class="app-header-left"><button class="app-back-button" data-target="wechat-app">取消</button></div>
+                            <div class="app-header-center">选择联系人</div>
+                            <div class="app-header-right"></div>
+                        </div>
+                        <div class="wechat-page-body" id="single-select-container"></div>
+                    </div>
+                    <div id="group-creation-view" class="view">
+                        <div class="app-header">
+                            <div class="app-header-left"><button class="app-back-button" data-target="wechat-app">取消</button></div>
+                            <div class="app-header-center">选择联系人</div>
+                            <div class="app-header-right"><button class="app-action-button" id="confirm-group-button" disabled>完成(0)</button></div>
+                        </div>
+                        <div class="wechat-page-body" id="group-select-container"></div>
+                    </div>
+                    <div id="settings-app" class="view">
+                        <div class="app-header">
+                            <div class="app-header-left"><button class="app-back-button" data-target="home-screen"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
+                            <div class="app-header-center">API 设置</div>
+                            <div class="app-header-right"></div>
+                        </div>
+                        <div class="wechat-page-body">
+                            <div class="form-container">
+                                <form id="api-form">
+                                    <div class="form-section">
+                                        <div class="form-group-header">正在使用的 API</div>
+                                        <div class="form-group"><label for="api-url-current">API URL</label><input type="text" id="api-url-current" placeholder="例如: https://api.openai.com/v1" required></div>
+                                        <div class="form-group">
+                                            <label for="api-key-current">API Key</label>
+                                            <div class="input-wrapper">
+                                                <input type="password" id="api-key-current" placeholder="请输入您的 API Key" required>
+                                                <span class="password-toggle" data-target="api-key-current"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group"><label for="model-select">模型选择</label><select id="model-select" disabled><option>请先获取模型列表</option></select></div>
+                                    </div>
+                                    <button type="submit" class="fetch-button">获取模型列表</button>
+                                </form>
+                                <div class="api-warehouse-container">
+                                    <div class="form-section">
+                                        <div class="form-group-header">API 仓库 (备用)</div>
+                                        <div class="api-slot">
+                                            <div class="form-group"><label for="api-url-standby-0">备用 1: URL</label><input type="text" id="api-url-standby-0" placeholder="备用 API 地址"></div>
+                                            <div class="form-group"><label for="api-key-standby-0">备用 1: Key</label><input type="password" id="api-key-standby-0" placeholder="备用 API Key"></div>
+                                            <button class="secondary-button" data-slot="0">载入并设为当前</button>
+                                        </div>
+                                        <div class="api-slot">
+                                            <div class="form-group"><label for="api-url-standby-1">备用 2: URL</label><input type="text" id="api-url-standby-1" placeholder="备用 API 地址"></div>
+                                            <div class="form-group"><label for="api-key-standby-1">备用 2: Key</label><input type="password" id="api-key-standby-1" placeholder="备用 API Key"></div>
+                                            <button class="secondary-button" data-slot="1">载入并设为当前</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="save-settings-btn" class="fetch-button">保存所有设置</button>
+                                <div id="api-status" class="api-status"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- === MODIFIED THEME APP START === -->
+                    <div id="theme-app" class="view">
+                        <div class="app-header">
+                            <div class="app-header-left"><button class="app-back-button" data-target="home-screen"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
+                            <div class="app-header-center">主题设置</div>
+                            <div class="app-header-right"></div>
+                        </div>
+                        <div class="wechat-page-body" id="theme-app-body">
+                            <div class="wallpaper-preview-container" title="点击更换壁纸">
+                                <div id="wallpaper-preview"></div>
+                                <div class="wallpaper-preview-overlay"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg><span>点击更换壁纸</span></div>
+                            </div>
+                            <!-- Hidden file inputs for wallpaper and icons -->
+                            <input type="file" id="wallpaper-file-input" accept="image/*" style="display: none;">
+                            <input type="file" id="icon-file-input" accept="image/*" style="display: none;">
+
+                            <div class="theme-dock-preview-container">
+                                <label>点击图标可更换</label>
+                                <div class="theme-dock-preview" id="theme-dock-preview"></div>
+                            </div>
+                            <button id="save-theme-btn" class="fetch-button">保存主题设置</button>
+                        </div>
+                    </div>
+                    <!-- === MODIFIED THEME APP END === -->
+
+                    <div id="world-book-app" class="view">
+                        <div class="app-header">
+                            <div class="app-header-left"><button class="app-back-button" data-target="home-screen"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
+                            <div class="app-header-center">世界书</div>
+                            <div class="app-header-right"></div>
+                        </div>
+                        <div class="wechat-page-body" style="display: flex; justify-content: center; align-items: center; color: var(--ios-text-secondary);"><p>世界书功能正在开发中...</p></div>
+                    </div>
+                    <div id="chat-view" class="view">
+                        <div class="app-header">
+                            <div class="app-header-left"><button class="app-back-button" data-target="wechat-app"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button></div>
+                            <div class="app-header-center" id="chat-view-header-center">
+                                <div id="chat-view-title">聊天</div>
+                                <small id="chat-view-status">在线</small>
+                            </div>
+                            <div class="app-header-right"><button class="app-action-button" id="chat-menu-button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="12" r="2"/></svg></button></div>
+                        </div>
+                        <div class="chat-message-container" id="chat-message-container"></div>
+                        <div class="chat-input-bar">
+                            <button id="voice-input-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                            </button>
+                            <input type="text" id="chat-input" placeholder="输入消息...">
+                            <button id="ai-reply-btn">
+                                <img src="https://s21.ax1x.com/2025/08/22/pVDRsg0.jpg" alt="Call AI">
+                            </button>
+                            <button id="send-message-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-buttons-right">
+            <div class="power-button" id="power-button" title="电源键"></div>
+        </div>
+    </div>
+
+    <div id="voice-input-popup" class="popup-overlay">
+        <div class="popup-content">
+            <p>请在这里输入内容</p>
+            <button id="close-popup-btn">关闭</button>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DATA MANAGEMENT & STATE ---
+        const DEFAULT_AVATAR_URL = 'https://s21.ax1x.com/2025/08/19/pVBNbLV.jpg';
+        let chatsData = [];
+        let contactsData = [];
+        let currentChatId = null;
+        let editingContactId = null; 
+        let characterFormReturnPath = 'wechat-app';
+        // MODIFIED: Theme state variables
+        let newWallpaperDataUrl = null;
+        let appIconUrls = {};
+        let currentTargetIconTarget = null;
+
+
+        function saveDataToLocalStorage() {
+            try {
+                localStorage.setItem('chatsData', JSON.stringify(chatsData));
+                localStorage.setItem('contactsData', JSON.stringify(contactsData));
+            } catch (e) {
+                console.error("Failed to save data to localStorage", e);
+            }
+        }
+
+        function loadDataFromLocalStorage() {
+            const savedChats = localStorage.getItem('chatsData');
+            const savedContacts = localStorage.getItem('contactsData');
+            if (savedContacts) {
+                contactsData = JSON.parse(savedContacts);
+            } else {
+                contactsData = [
+                    { id: 1, name: '爱因斯坦', persona: '相对论的创立者', avatar: 'https://api.multiavatar.com/Albert%20Einstein.svg', user: { name: '我', persona: '一个好奇的学生', avatar: DEFAULT_AVATAR_URL }, memory: '喜欢问关于宇宙的问题', css: '' },
+                    { id: 2, name: '牛顿', persona: '经典力学的奠基人', avatar: 'https://api.multiavatar.com/Isaac%20Newton.svg', user: { name: '我', persona: '一个严谨的思考者', avatar: DEFAULT_AVATAR_URL }, memory: '对万有引力很感兴趣', css: '' },
+                ];
+            }
+            if (savedChats) {
+                chatsData = JSON.parse(savedChats);
+            } else {
+                chatsData = [
+                    { id: 'chat-1', type: 'single', members: [1], name: '爱因斯坦', avatar: 'https://api.multiavatar.com/Albert%20Einstein.svg', lastMessage: '你好，有什么关于宇宙的问题吗？', timestamp: Date.now() - 100000, messages: [], isPinned: false },
+                ];
+            }
+        }
+
+        // --- DOM Elements ---
+        const allViews = document.querySelectorAll('.view');
+        const appIcons = document.querySelectorAll('.app-icon');
+        const backButtons = document.querySelectorAll('.app-back-button');
+        const timeDisplay = document.getElementById('time-display');
+        const dateDisplay = document.getElementById('date-display');
+        const statusBarTime = document.getElementById('status-bar-time');
+        const globalStatusBar = document.getElementById('global-status-bar');
+        const iphoneScreen = document.querySelector('.iphone-screen');
+        
+        // --- Navigation Logic ---
+        function navigateTo(targetId) {
+            allViews.forEach(view => view.classList.remove('active'));
+            const targetView = document.getElementById(targetId);
+            if (targetView) {
+                targetView.classList.add('active');
+                globalStatusBar.className = (targetId === 'home-screen') ? 'light-content' : 'dark-content';
+            } else {
+                document.getElementById('home-screen').classList.add('active');
+                globalStatusBar.className = 'light-content';
+            }
+        }
+        appIcons.forEach(icon => icon.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            const targetId = icon.dataset.target;
+            if (targetId === 'theme-app') {
+                wallpaperPreview.style.backgroundImage = window.getComputedStyle(iphoneScreen).backgroundImage;
+                populateDockPreview();
+            }
+            navigateTo(targetId); 
+        }));
+        backButtons.forEach(button => {
+            if (button.id === 'cancel-character-creation') return;
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                if(document.getElementById('chat-view').classList.contains('active')) {
+                    switchWechatTab('1');
+                }
+                navigateTo(button.dataset.target);
+            });
+        });
+
+        // --- Real-time Clock & Battery ---
+        function updateTime() {
+            const now = new Date();
+            const timeString = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            dateDisplay.textContent = now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
+            timeDisplay.textContent = timeString;
+
+            if (statusBarTime) {
+                statusBarTime.textContent = timeString;
+            }
+        }
+        
+        const batteryPercentageText = document.getElementById('battery-percentage-text');
+        const batteryFill = document.getElementById('battery-fill');
+        const maxFillWidth = 28; 
+
+        function updateBatteryStatus(battery) {
+            const level = Math.round(battery.level * 100);
+            const isCharging = battery.charging;
+
+            batteryPercentageText.textContent = level;
+            batteryFill.setAttribute('width', maxFillWidth * battery.level);
+
+            batteryFill.style.fill = ''; 
+            
+            if (isCharging) {
+                batteryFill.style.fill = 'var(--ios-charging-green)';
+            } 
+            else if (level <= 20) {
+                batteryFill.style.fill = 'var(--ios-low-battery-red)';
+            }
+        }
+        
+        setInterval(updateTime, 1000);
+        if ('getBattery' in navigator) { 
+            navigator.getBattery().then(battery => { 
+                updateBatteryStatus(battery); 
+                battery.addEventListener('levelchange', () => updateBatteryStatus(battery)); 
+                battery.addEventListener('chargingchange', () => updateBatteryStatus(battery)); 
+            }); 
+        }
+
+        // --- WeChat App Logic ---
+        const wechatTabs = document.querySelectorAll('.wechat-tab');
+        const wechatPages = document.querySelectorAll('.wechat-page');
+        function switchWechatTab(pageNum) {
+            wechatTabs.forEach(t => t.classList.remove('active'));
+            document.querySelector(`.wechat-tab[data-page="${pageNum}"]`).classList.add('active');
+            wechatPages.forEach(p => p.classList.remove('active'));
+            document.getElementById(`wechat-page-${pageNum}`).classList.add('active');
+        }
+        wechatTabs.forEach(tab => tab.addEventListener('click', () => switchWechatTab(tab.dataset.page)));
+
+        // --- Chat List & Swipe Logic ---
+        const chatListContainer = document.getElementById('chat-list-container');
+        const chatAddButton = document.getElementById('chat-add-button');
+        const chatDropdown = document.getElementById('chat-dropdown');
+        const addSingleChatBtn = document.getElementById('add-single-chat');
+        const addGroupChatBtn = document.getElementById('add-group-chat');
+        let swipedChatItem = null;
+        let touchStartX = 0;
+        let touchCurrentX = 0;
+
+        function renderChatList() {
+            chatsData.sort((a, b) => (b.isPinned || 0) - (a.isPinned || 0) || b.timestamp - a.timestamp);
+            
+            chatListContainer.innerHTML = chatsData.map(chat => `
+                <div class="chat-item ${chat.isPinned ? 'pinned' : ''}" data-chat-id="${chat.id}">
+                    <div class="chat-item-actions">
+                        <button class="chat-action-button action-pin">${chat.isPinned ? '取消置顶' : '置顶'}</button>
+                        <button class="chat-action-button action-delete">删除</button>
+                    </div>
+                    <div class="chat-item-content">
+                        <img class="chat-avatar" src="${chat.avatar || DEFAULT_AVATAR_URL}" alt="avatar">
+                        <div class="chat-details">
+                            <div class="chat-name">${chat.name}</div>
+                            <div class="chat-preview">${chat.lastMessage || ''}</div>
+                        </div>
+                        <div class="chat-time">${new Date(chat.timestamp).toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'})}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function closeSwipedItem() {
+            if (swipedChatItem) {
+                swipedChatItem.classList.remove('swiped');
+                swipedChatItem = null;
+            }
+        }
+
+        chatListContainer.addEventListener('touchstart', e => {
+            if (e.target.closest('.chat-action-button')) return;
+            const targetItem = e.target.closest('.chat-item');
+            if (swipedChatItem && swipedChatItem !== targetItem) {
+                closeSwipedItem();
+            }
+            touchStartX = e.targetTouches[0].clientX;
+            touchCurrentX = touchStartX;
+        });
+
+        chatListContainer.addEventListener('touchmove', e => {
+            touchCurrentX = e.targetTouches[0].clientX;
+        });
+
+        chatListContainer.addEventListener('touchend', e => {
+            const swipeDistance = touchStartX - touchCurrentX;
+            const targetItem = e.target.closest('.chat-item');
+            if (!targetItem) return;
+
+            if (swipeDistance > 50) {
+                swipedChatItem = targetItem;
+                targetItem.classList.add('swiped');
+            } else if (swipeDistance < -50) {
+                targetItem.classList.remove('swiped');
+                if (swipedChatItem === targetItem) swipedChatItem = null;
+            }
+        });
+
+        chatListContainer.addEventListener('click', e => {
+            const actionPin = e.target.closest('.action-pin');
+            const actionDelete = e.target.closest('.action-delete');
+            const chatItemContent = e.target.closest('.chat-item-content');
+
+            if (actionPin) {
+                const chatId = actionPin.closest('.chat-item').dataset.chatId;
+                const chat = chatsData.find(c => c.id === chatId);
+                if (chat) {
+                    chat.isPinned = !chat.isPinned;
+                    saveDataToLocalStorage();
+                    renderChatList();
+                }
+                return;
+            }
+
+            if (actionDelete) {
+                const chatId = actionDelete.closest('.chat-item').dataset.chatId;
+                if (confirm('确定要删除该聊天吗？此操作不可恢复。')) {
+                    chatsData = chatsData.filter(c => c.id !== chatId);
+                    saveDataToLocalStorage();
+                    renderChatList();
+                }
+                return;
+            }
+            
+            if (chatItemContent) {
+                if (swipedChatItem) {
+                    e.preventDefault();
+                    closeSwipedItem();
+                } else {
+                    navigateToChat(chatItemContent.parentElement.dataset.chatId);
+                }
+            }
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#chat-list-container')) {
+                closeSwipedItem();
+            }
+            if (!e.target.closest('.add-button')) {
+                chatDropdown.classList.remove('show');
+            }
+        });
+
+        chatAddButton.addEventListener('click', (e) => { e.stopPropagation(); chatDropdown.classList.toggle('show'); });
+        addSingleChatBtn.addEventListener('click', () => { renderSingleSelectContactList(); navigateTo('single-chat-creation-view'); });
+        addGroupChatBtn.addEventListener('click', () => { renderGroupSelect(); navigateTo('group-creation-view'); });
+
+        // --- Contact Interaction Logic ---
+        function initiateChatWithContact(contactId) {
+            const contact = contactsData.find(c => c.id === contactId);
+            if (!contact) return;
+            let chat = chatsData.find(ch => ch.type === 'single' && ch.members.includes(contactId));
+            if (!chat) {
+                const welcomeMessage = '我们已经是好友了，开始聊天吧';
+                chat = {
+                    id: `chat-${Date.now()}`, type: 'single', members: [contactId],
+                    name: contact.name, avatar: contact.avatar,
+                    lastMessage: welcomeMessage, timestamp: Date.now(),
+                    messages: [{ senderId: 'system', content: welcomeMessage, timestamp: Date.now() }],
+                    isPinned: false
+                };
+                chatsData.push(chat);
+                saveDataToLocalStorage();
+                renderChatList();
+            }
+            navigateToChat(chat.id);
+        }
+
+        // --- Contacts Page Logic ---
+        const contactListContainer = document.getElementById('contact-list-container');
+        const contactAddButton = document.getElementById('contact-add-button');
+        function getPinyinInitial(name) { return name.charAt(0).toUpperCase(); }
+        function renderContactList() {
+            contactsData.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+            let currentLetter = '';
+            contactListContainer.innerHTML = contactsData.map(contact => {
+                const firstLetter = getPinyinInitial(contact.name);
+                let header = '';
+                if (firstLetter !== currentLetter) {
+                    currentLetter = firstLetter;
+                    header = `<div class="contact-group-header">${currentLetter}</div>`;
+                }
+                return header + `
+                    <div class="contact-item" data-contact-id="${contact.id}">
+                        <img class="contact-avatar" src="${contact.avatar || DEFAULT_AVATAR_URL}" alt="avatar">
+                        <div class="contact-name">${contact.name}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        contactAddButton.addEventListener('click', () => openCharacterCreator());
+        contactListContainer.addEventListener('click', e => {
+            const contactItem = e.target.closest('.contact-item');
+            if (contactItem) {
+                initiateChatWithContact(parseInt(contactItem.dataset.contactId));
+            }
+        });
+
+        // --- Single Chat Creation Page ---
+        const singleSelectContainer = document.getElementById('single-select-container');
+        function renderSingleSelectContactList() {
+            singleSelectContainer.innerHTML = contactsData.map(contact => `
+                <div class="contact-item" data-contact-id="${contact.id}">
+                    <img class="contact-avatar" src="${contact.avatar || DEFAULT_AVATAR_URL}" alt="avatar">
+                    <div class="contact-name">${contact.name}</div>
+                </div>
+            `).join('');
+        }
+        singleSelectContainer.addEventListener('click', e => {
+            const contactItem = e.target.closest('.contact-item');
+            if (contactItem) {
+                initiateChatWithContact(parseInt(contactItem.dataset.contactId));
+            }
+        });
+
+        // --- Character Creation & Editing Logic ---
+        const characterForm = document.getElementById('character-form');
+        const characterFormTitle = document.getElementById('character-form-title');
+        const saveCharacterBtn = document.getElementById('save-character-button');
+        const cancelCharacterBtn = document.getElementById('cancel-character-creation');
+        const roleNameInput = document.getElementById('role-name');
+        const roleAvatarPreview = document.getElementById('role-avatar-preview');
+        const userAvatarPreview = document.getElementById('user-avatar-preview');
+
+        function openCharacterCreator() {
+            editingContactId = null;
+            characterFormReturnPath = 'wechat-app';
+            characterFormTitle.textContent = '创建角色';
+            characterForm.reset();
+            roleAvatarPreview.src = DEFAULT_AVATAR_URL;
+            userAvatarPreview.src = DEFAULT_AVATAR_URL;
+            navigateTo('character-creation-view');
+        }
+
+        function openCharacterEditor(contact) {
+            if (!contact) return;
+            editingContactId = contact.id;
+            characterFormReturnPath = 'chat-view';
+            characterFormTitle.textContent = '编辑角色';
+            
+            document.getElementById('role-name').value = contact.name;
+            roleAvatarPreview.src = contact.avatar || DEFAULT_AVATAR_URL;
+            document.getElementById('role-persona').value = contact.persona || '';
+            document.getElementById('user-name').value = contact.user?.name || '';
+            userAvatarPreview.src = contact.user?.avatar || DEFAULT_AVATAR_URL;
+            document.getElementById('user-persona').value = contact.user?.persona || '';
+            document.getElementById('long-term-memory').value = contact.memory || '';
+            document.getElementById('bubble-css').value = contact.css || '';
+
+            navigateTo('character-creation-view');
+        }
+
+        function handleAvatarChange(fileInput, previewEl) {
+            const reader = new FileReader();
+            reader.onload = e => { previewEl.src = e.target.result; };
+            fileInput.addEventListener('change', () => { if (fileInput.files[0]) { reader.readAsDataURL(fileInput.files[0]); } });
+            previewEl.addEventListener('click', () => fileInput.click());
+        }
+        handleAvatarChange(document.getElementById('role-avatar-file'), roleAvatarPreview);
+        handleAvatarChange(document.getElementById('user-avatar-file'), userAvatarPreview);
+        
+        saveCharacterBtn.addEventListener('click', () => {
+            if (!roleNameInput.value.trim()) { alert('角色名字是必填项！'); return; }
+            
+            const characterData = {
+                name: roleNameInput.value.trim(),
+                persona: document.getElementById('role-persona').value.trim(),
+                avatar: roleAvatarPreview.src,
+                user: {
+                    name: document.getElementById('user-name').value.trim(),
+                    persona: document.getElementById('user-persona').value.trim(),
+                    avatar: userAvatarPreview.src,
+                },
+                memory: document.getElementById('long-term-memory').value.trim(),
+                css: document.getElementById('bubble-css').value.trim()
+            };
+
+            if (editingContactId) {
+                const contactIndex = contactsData.findIndex(c => c.id === editingContactId);
+                if (contactIndex > -1) {
+                    contactsData[contactIndex] = { ...contactsData[contactIndex], ...characterData };
+                    chatsData.forEach(chat => {
+                        if (chat.type === 'single' && chat.members.includes(editingContactId)) {
+                            chat.name = characterData.name;
+                            chat.avatar = characterData.avatar;
+                        }
+                    });
+                }
+            } else {
+                const newContact = { id: Date.now(), ...characterData };
+                contactsData.push(newContact);
+            }
+
+            saveDataToLocalStorage();
+            renderContactList();
+            renderChatList();
+            
+            if (characterFormReturnPath === 'chat-view') {
+                navigateToChat(currentChatId);
+            } else {
+                switchWechatTab('2');
+                navigateTo('wechat-app');
+            }
+            editingContactId = null;
+        });
+
+        cancelCharacterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(characterFormReturnPath === 'chat-view' ? 'chat-view' : 'wechat-app');
+            editingContactId = null;
+        });
+
+        // --- Group Creation, Settings Logic ---
+        const groupSelectContainer = document.getElementById('group-select-container');
+        const confirmGroupBtn = document.getElementById('confirm-group-button');
+        function renderGroupSelect() { /* ... */ }
+        groupSelectContainer.addEventListener('change', () => { /* ... */ });
+        confirmGroupBtn.addEventListener('click', () => { /* ... */ });
+
+        const apiForm = document.getElementById('api-form');
+        const apiUrlInput = document.getElementById('api-url-current');
+        const apiKeyInput = document.getElementById('api-key-current');
+        const modelSelect = document.getElementById('model-select');
+        const apiStatus = document.getElementById('api-status');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const standbyUrlInputs = [document.getElementById('api-url-standby-0'), document.getElementById('api-url-standby-1')];
+        const standbyKeyInputs = [document.getElementById('api-key-standby-0'), document.getElementById('api-key-standby-1')];
+        const loadStandbyButtons = document.querySelectorAll('.secondary-button');
+        let apiWarehouse = {
+            current: { url: '', key: '', model: '' },
+            standby: [{ url: '', key: '' }, { url: '', key: '' }]
+        };
+        function saveApiSettings() {
+            apiWarehouse.current.url = apiUrlInput.value.trim();
+            apiWarehouse.current.key = apiKeyInput.value.trim();
+            apiWarehouse.current.model = modelSelect.value || '';
+            apiWarehouse.standby[0].url = standbyUrlInputs[0].value.trim();
+            apiWarehouse.standby[0].key = standbyKeyInputs[0].value.trim();
+            apiWarehouse.standby[1].url = standbyUrlInputs[1].value.trim();
+            apiWarehouse.standby[1].key = standbyKeyInputs[1].value.trim();
+            localStorage.setItem('apiWarehouse', JSON.stringify(apiWarehouse));
+            apiStatus.textContent = '所有设置已保存！';
+            apiStatus.className = 'api-status success';
+            setTimeout(() => apiStatus.textContent = '', 2000);
+        }
+        function loadApiSettings() {
+            const savedWarehouse = localStorage.getItem('apiWarehouse');
+            if (savedWarehouse) {
+                apiWarehouse = JSON.parse(savedWarehouse);
+            }
+            apiUrlInput.value = apiWarehouse.current.url || '';
+            apiKeyInput.value = apiWarehouse.current.key || '';
+            standbyUrlInputs[0].value = apiWarehouse.standby[0]?.url || '';
+            standbyKeyInputs[0].value = apiWarehouse.standby[0]?.key || '';
+            standbyUrlInputs[1].value = apiWarehouse.standby[1]?.url || '';
+            standbyKeyInputs[1].value = apiWarehouse.standby[1]?.key || '';
+            if (apiWarehouse.current.url && apiWarehouse.current.key) {
+                fetchModels(apiWarehouse.current.model);
+            }
+        }
+        function loadStandbyAsCurrent(slotIndex) {
+            const currentUrl = apiUrlInput.value.trim();
+            const currentKey = apiKeyInput.value.trim();
+            const standbyUrl = standbyUrlInputs[slotIndex].value.trim();
+            const standbyKey = standbyKeyInputs[slotIndex].value.trim();
+            apiUrlInput.value = standbyUrl;
+            apiKeyInput.value = standbyKey;
+            standbyUrlInputs[slotIndex].value = currentUrl;
+            standbyKeyInputs[slotIndex].value = currentKey;
+            modelSelect.innerHTML = '<option>请先获取模型列表</option>';
+            modelSelect.disabled = true;
+            apiStatus.textContent = `已载入备用 ${slotIndex + 1}，请获取模型后保存。`;
+            apiStatus.className = 'api-status';
+            saveApiSettings();
+        }
+        async function fetchModels(preSelectedModel) {
+            const rawApiUrl = apiUrlInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+            
+            if (!rawApiUrl || !apiKey) {
+                apiStatus.textContent = '当前 API 的 URL 和 Key 不能为空';
+                apiStatus.className = 'api-status error';
+                return;
+            }
+            
+            const apiUrl = rawApiUrl.replace(/\/$/, "");
+
+            apiStatus.textContent = '正在获取模型列表...';
+            apiStatus.className = 'api-status';
+            modelSelect.disabled = true;
+            modelSelect.innerHTML = '<option>加载中...</option>';
+            try {
+                const response = await fetch(`${apiUrl}/models`, {
+                    headers: { 'Authorization': `Bearer ${apiKey}` }
+                });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(errorData?.error?.message || `HTTP 错误: ${response.status}`);
+                }
+                const data = await response.json();
+                const models = data.data;
+                if (!models || !Array.isArray(models)) {
+                    throw new Error('API返回数据格式不正确');
+                }
+                modelSelect.innerHTML = '';
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.id;
+                    modelSelect.appendChild(option);
+                });
+                if (preSelectedModel) {
+                    modelSelect.value = preSelectedModel;
+                }
+                modelSelect.disabled = false;
+                apiStatus.textContent = '获取模型成功，请选择后保存。';
+                apiStatus.className = 'api-status success';
+            } catch (error) {
+                console.error('获取模型失败:', error);
+                apiStatus.textContent = `获取失败: ${error.message}`;
+                apiStatus.className = 'api-status error';
+                modelSelect.innerHTML = '<option>获取失败，请重试</option>';
+            }
+        }
+        apiForm.addEventListener('submit', (e) => { e.preventDefault(); fetchModels(); });
+        saveSettingsBtn.addEventListener('click', saveApiSettings);
+        loadStandbyButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const slot = parseInt(e.target.dataset.slot, 10);
+                loadStandbyAsCurrent(slot);
+            });
+        });
+        document.getElementById('settings-app').addEventListener('click', (e) => {
+            if (e.target.closest('.password-toggle')) {
+                const toggle = e.target.closest('.password-toggle');
+                const targetInput = document.getElementById(toggle.dataset.target);
+                if (targetInput) {
+                    targetInput.type = targetInput.type === 'password' ? 'text' : 'password';
+                }
+            }
+        });
+
+        // --- MODIFIED: Theme App Logic ---
+        const wallpaperPreview = document.getElementById('wallpaper-preview');
+        const wallpaperFileInput = document.getElementById('wallpaper-file-input');
+        const iconFileInput = document.getElementById('icon-file-input');
+        const saveThemeBtn = document.getElementById('save-theme-btn');
+        const themeDockPreview = document.getElementById('theme-dock-preview');
+        
+        function applyWallpaper(imageUrl) {
+            iphoneScreen.style.backgroundImage = `url('${imageUrl}')`;
+        }
+
+        function loadWallpaper() {
+            const savedWallpaper = localStorage.getItem('savedWallpaper');
+            if (savedWallpaper) {
+                applyWallpaper(savedWallpaper);
+            }
+        }
+
+        function saveAppIcons() {
+            localStorage.setItem('appIconUrls', JSON.stringify(appIconUrls));
+        }
+
+        function loadAppIcons() {
+            const savedIcons = localStorage.getItem('appIconUrls');
+            if (savedIcons) {
+                appIconUrls = JSON.parse(savedIcons);
+            }
+        }
+
+        function applyAllCustomIcons() {
+            const mainDockIcons = document.querySelectorAll('#home-screen .dock .app-icon');
+            mainDockIcons.forEach(iconLink => {
+                const target = iconLink.dataset.target;
+                if (appIconUrls[target]) {
+                    iconLink.querySelector('img').src = appIconUrls[target];
+                }
+            });
+        }
+
+        function populateDockPreview() {
+            const mainDockIcons = document.querySelectorAll('#home-screen .dock .app-icon');
+            themeDockPreview.innerHTML = '';
+            mainDockIcons.forEach(iconNode => {
+                const iconClone = iconNode.cloneNode(true);
+                const target = iconClone.dataset.target;
+                
+                // Apply custom icon if it exists
+                if (appIconUrls[target]) {
+                    iconClone.querySelector('img').src = appIconUrls[target];
+                }
+
+                iconClone.removeAttribute('href');
+                iconClone.style.cursor = 'pointer'; // Already set in CSS, but good for clarity
+                themeDockPreview.appendChild(iconClone);
+            });
+        }
+
+        wallpaperPreview.parentElement.addEventListener('click', () => {
+            wallpaperFileInput.click();
+        });
+
+        wallpaperFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    newWallpaperDataUrl = e.target.result;
+                    wallpaperPreview.style.backgroundImage = `url('${newWallpaperDataUrl}')`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        themeDockPreview.addEventListener('click', (e) => {
+            const iconLink = e.target.closest('.app-icon');
+            if (iconLink) {
+                currentTargetIconTarget = iconLink.dataset.target;
+                iconFileInput.click();
+            }
+        });
+
+        iconFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/') && currentTargetIconTarget) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const newIconUrl = e.target.result;
+                    // Update state
+                    appIconUrls[currentTargetIconTarget] = newIconUrl;
+                    // Update preview immediately
+                    const previewIconImg = themeDockPreview.querySelector(`.app-icon[data-target="${currentTargetIconTarget}"] img`);
+                    if (previewIconImg) {
+                        previewIconImg.src = newIconUrl;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        saveThemeBtn.addEventListener('click', () => {
+            let savedSomething = false;
+            if (newWallpaperDataUrl) {
+                localStorage.setItem('savedWallpaper', newWallpaperDataUrl);
+                applyWallpaper(newWallpaperDataUrl);
+                newWallpaperDataUrl = null; // Reset after saving
+                savedSomething = true;
+            }
+
+            // Always save icons and apply them
+            saveAppIcons();
+            applyAllCustomIcons();
+            savedSomething = true; // Consider icon changes as a save action
+
+            if (savedSomething) {
+                alert('主题设置已保存并应用！');
+            } else {
+                alert('没有新的更改需要保存。');
+            }
+        });
+
+
+        // --- Chat View Logic ---
+        const chatViewTitle = document.getElementById('chat-view-title');
+        const chatViewStatus = document.getElementById('chat-view-status');
+        const messageContainer = document.getElementById('chat-message-container');
+        const chatInput = document.getElementById('chat-input');
+        const sendMessageBtn = document.getElementById('send-message-btn');
+        const aiReplyBtn = document.getElementById('ai-reply-btn');
+        const chatMenuButton = document.getElementById('chat-menu-button');
+        const plusIconHTML = sendMessageBtn.innerHTML;
+        const voiceInputBtn = document.getElementById('voice-input-btn');
+        const voiceInputPopup = document.getElementById('voice-input-popup');
+        const closePopupBtn = document.getElementById('close-popup-btn');
+
+        voiceInputBtn.addEventListener('click', () => {
+            voiceInputPopup.classList.add('show');
+        });
+        closePopupBtn.addEventListener('click', () => {
+            voiceInputPopup.classList.remove('show');
+        });
+        voiceInputPopup.addEventListener('click', (e) => {
+            if (e.target === voiceInputPopup) {
+                voiceInputPopup.classList.remove('show');
+            }
+        });
+
+        chatInput.addEventListener('input', () => {
+            if (chatInput.value.trim().length > 0) {
+                sendMessageBtn.innerHTML = '发送';
+                sendMessageBtn.classList.add('send-active');
+            } else {
+                sendMessageBtn.innerHTML = plusIconHTML;
+                sendMessageBtn.classList.remove('send-active');
+            }
+        });
+
+        function navigateToChat(chatId) {
+            currentChatId = chatId;
+            const chat = chatsData.find(c => c.id === chatId);
+            if (!chat) return;
+            chatViewTitle.textContent = chat.name;
+            chatViewStatus.textContent = '在线';
+            renderMessages();
+            navigateTo('chat-view');
+        }
+
+        function renderMessages() {
+            const chat = chatsData.find(c => c.id === currentChatId);
+            if (!chat) return;
+            const contact = contactsData.find(c => chat.type === 'single' && c.id === chat.members[0]);
+            const userAvatar = contact?.user?.avatar || DEFAULT_AVATAR_URL;
+            const aiAvatar = contact?.avatar || DEFAULT_AVATAR_URL;
+            messageContainer.innerHTML = chat.messages.map(msg => {
+                if (msg.senderId === 'system') return `<div class="chat-message system">${msg.content}</div>`;
+                const isUser = msg.senderId === 'user';
+                const avatarSrc = isUser ? userAvatar : aiAvatar;
+                const senderId = isUser ? 'user' : 'ai';
+                return `
+                    <div class="chat-message ${senderId}">
+                        <img src="${avatarSrc}" alt="avatar" class="chat-message-avatar">
+                        <div class="chat-message-bubble">${msg.content}</div>
+                    </div>
+                `;
+            }).join('');
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+
+        sendMessageBtn.addEventListener('click', () => {
+            if (!sendMessageBtn.classList.contains('send-active')) return;
+            const content = chatInput.value.trim();
+            if (!content || !currentChatId) return;
+            const chat = chatsData.find(c => c.id === currentChatId);
+            chat.messages.push({ senderId: 'user', content, timestamp: Date.now() });
+            chat.lastMessage = content;
+            chat.timestamp = Date.now();
+            saveDataToLocalStorage();
+            renderMessages();
+            renderChatList();
+            chatInput.value = '';
+            chatInput.dispatchEvent(new Event('input'));
+        });
+
+        chatMenuButton.addEventListener('click', () => {
+            if (!currentChatId) return;
+            const chat = chatsData.find(c => c.id === currentChatId);
+            if (!chat || chat.type !== 'single') return;
+            const contact = contactsData.find(c => c.id === chat.members[0]);
+            if (contact) {
+                openCharacterEditor(contact);
+            }
+        });
+
+        aiReplyBtn.addEventListener('click', async () => {
+            if (!currentChatId) return;
+            const savedWarehouse = localStorage.getItem('apiWarehouse');
+            if (!savedWarehouse) {
+                alert('请先在"设置"页面配置API信息！');
+                return;
+            }
+            const warehouse = JSON.parse(savedWarehouse);
+            const { url, key, model } = warehouse.current;
+            if (!url || !key || !model) {
+                alert('当前使用的API配置不完整，请前往"设置"页面检查并保存。');
+                return;
+            }
+            const chat = chatsData.find(c => c.id === currentChatId);
+            const contact = contactsData.find(c => chat.type === 'single' && c.id === chat.members[0]);
+            if (!chat || !contact) return;
+            chatViewStatus.textContent = '对方正在输入...';
+            aiReplyBtn.disabled = true;
+            const systemPrompt = `你是 ${contact.name}，你的人设是：${contact.persona}。
+回复规则（必须严格遵守）：
+1. 使用1-3条短消息回复，每条消息用"|||"分隔
+2. 每条消息默认使用中文，如果没有接收到用户指令，禁止发送英语，日语等他国语言，长度1-50字符
+3. 消息必须是连贯的，像真人一样对话
+4. 不要使用特殊符号，保持自然对话风格
+5. 直接输出回复内容，不要有任何解释或注释
+6. 禁止使用<>[]{}*等特殊符号
+
+示例回复格式：
+第一条短消息|||第二条短消息|||第三条短消息`;
+            const messagesForApi = [
+                { role: 'system', content: systemPrompt },
+                ...chat.messages
+                    .filter(m => m.senderId !== 'system')
+                    .map(m => ({
+                        role: m.senderId === 'user' ? 'user' : 'assistant',
+                        content: m.content
+                    }))
+            ];
+            try {
+                const response = await fetch(`${url.replace(/\/$/, "")}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${key}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: messagesForApi,
+                        max_tokens: 150,
+                        temperature: 0.7
+                    })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error?.message || '网络请求失败');
+                }
+                const data = await response.json();
+                const rawContent = data.choices[0].message.content.trim();
+                const messages = rawContent.split('|||').map(msg => msg.trim()).filter(Boolean);
+                messages.forEach((message, index) => {
+                    setTimeout(() => {
+                        chat.messages.push({ 
+                            senderId: contact.id, 
+                            content: message, 
+                            timestamp: Date.now() + index * 1000 
+                        });
+                        if (index === 0) {
+                            chat.lastMessage = message;
+                            chat.timestamp = Date.now();
+                        }
+                        saveDataToLocalStorage();
+                        renderMessages();
+                        renderChatList();
+                    }, index * (800 + Math.random() * 500));
+                });
+            } catch (error) {
+                console.error(`API调用失败:`, error);
+                const errorMsg = `AI回复生成失败`;
+                chat.messages.push({ 
+                    senderId: 'system', 
+                    content: errorMsg, 
+                    timestamp: Date.now() 
+                });
+                renderMessages();
+            } finally {
+                aiReplyBtn.disabled = false;
+                chatViewStatus.textContent = '在线';
+            }
+        });
+
+        // --- Initial Load ---
+        loadDataFromLocalStorage();
+        loadApiSettings();
+        loadWallpaper();
+        loadAppIcons(); // Load custom icons
+        applyAllCustomIcons(); // Apply them to the main dock
+        updateTime();
+        renderChatList();
+        renderContactList();
+        navigateTo('home-screen');
+    });
+    </script>
+</body>
+</html>
